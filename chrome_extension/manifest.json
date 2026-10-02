@@ -1,0 +1,9 @@
+{
+  "manifest_version": 3,
+  "name": "Bot Tab Tracker",
+  "version": "1.0",
+  "permissions": ["tabs", "activeTab"],
+  "background": {
+    "service_worker": "background.js"
+  }
+}

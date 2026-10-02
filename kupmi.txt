@@ -1,0 +1,20 @@
+import cv2
+
+# Wczytaj obraz
+img = cv2.imread("twoje_zdjecie.jpg")
+gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+# Wykrywanie krawędzi
+edges = cv2.Canny(gray, 50, 150, apertureSize=3)
+
+# Wyszukiwanie linii metodą Hougha
+lines = cv2.HoughLinesP(edges, rho=1, theta=cv2.HOUGH_PI/180,
+                        threshold=100, minLineLength=50, maxLineGap=10)
+
+# Jeśli są jakieś linie, wypisz współrzędne
+if lines is not None:
+    for line in lines:
+        x1, y1, x2, y2 = line[0]
+        print(f"Linia: ({x1}, {y1}) → ({x2}, {y2})")
+else:
+    print("Nie znaleziono linii")

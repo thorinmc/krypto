@@ -1,0 +1,171 @@
+import time
+import cv2
+import numpy as np
+import pyautogui
+
+# 🧪 Mocki do testowania ---------------------------------
+
+def do_action(*args, **kwargs):
+    print(f"[MOCK] do_action{args} {kwargs}")
+
+def calculate_dynamic_qty(entry_price, sl_price, symbol):
+    print(f"[MOCK] calculate_dynamic_qty({entry_price}, {sl_price}, {symbol})")
+    return 0.01  # przykładowa ilość
+
+def sl_tp(df, side, sl_price, tp_multiplier, tick_size):
+    print(f"[MOCK] sl_tp() wywołane: side={side}, sl={sl_price}, mult={tp_multiplier}, tick={tick_size}")
+    entry = 50000.0
+    tp = 50500.0 if side == "buy" else 49500.0
+    sl = 49500.0 if side == "buy" else 50500.0
+    return {"entry": entry, "tp": tp, "sl": sl}
+
+def detect_longest_horizontal_line(mask, image, color=None):
+    print(f"[MOCK] detect_longest_horizontal_line() {color=}")
+    # symulacja współrzędnych linii (x1, y1, x2, y2)
+    return (0, 400, 1920, 400)
+
+def read_number_from_image(path):
+    print(f"[MOCK] read_number_from_image({path})")
+    if "gorny" in path:
+        return 500
+    if "dolny" in path:
+        return 200
+    return None
+
+# 🧩 Główna funkcja --------------------------------------
+
+def place_futures_order_with_tp_sl_tv(symbol, side, quantity, entry_price, sl_price,
+                                      waiting_20, waiting_50, waiting_20_down, waiting_50_down,
+                                      df, precision, tp_multiplier, opposite, tick_size):
+    global chuj, cw, mask_red, mask_blue, mask_all
+    chuj = side  # dla testu – ustaw kierunek globalnie
+    cw = False
+
+    def unpack_if_tuple(val, name, index=0):
+        if isinstance(val, tuple):
+            print(f"[⚠️] {name} przekazane jako tuple: {val} — biorę element {index}")
+            return val[index]
+        return val
+
+    entry_price = unpack_if_tuple(entry_price, "entry_price", 0)
+    sl_price = unpack_if_tuple(sl_price, "sl_price", 0)
+    tp_multiplier = unpack_if_tuple(tp_multiplier, "tp_multiplier", 0)
+    if isinstance(tick_size, tuple):
+        tick_size = unpack_if_tuple(tick_size, "tick_size", 1 if len(tick_size) > 1 else 0)
+    else:
+        tick_size = unpack_if_tuple(tick_size, "tick_size")
+
+    # ✅ oblicz SL/TP
+    result = sl_tp(df, side=side, sl_price=sl_price, tp_multiplier=tp_multiplier, tick_size=tick_size)
+    if not result:
+        print("[❌] sl_tp nie zwróciło wartości – przerywam.")
+        return
+
+    entry_price = float(result["entry"])
+    sl_price = float(result["sl"])
+    tp_price = float(result["tp"])
+
+    print(f"[DEBUG] ENTRY={entry_price}, SL={sl_price}, TP={tp_price}")
+
+    # wpisz ilość pozycji
+    do_action(-2170, 160)
+    for _ in range(10):
+        pyautogui.press("backspace")
+    qty = calculate_dynamic_qty(entry_price, sl_price, symbol)
+    pyautogui.write(str(qty), interval=0.05)
+
+    # klik BUY/SELL
+    if chuj == "buy":
+        do_action(-2120, 150)
+        time.sleep(1)
+    if chuj == "sell":
+        do_action(-2250, 160)
+        time.sleep(1)
+
+    print("kupiono")
+    time.sleep(1)
+
+    # symulacja zrzutu i detekcji
+    mask_all = np.zeros((1080, 1920), np.uint8)
+    image = np.zeros((1080, 1920, 3), np.uint8)
+
+    y_line = detect_longest_horizontal_line(mask_all, image)
+    if y_line:
+        y_line = y_line[1]
+    else:
+        print("[⚠️] Nie udało się wykryć linii — y_line = None")
+        return
+
+    cw = True
+    print("ss")
+    time.sleep(1)
+
+    print("obliczenia")
+    time.sleep(1)
+
+    xup = read_number_from_image("gorny.png")
+    xdown = read_number_from_image("dolny.png")
+    print(f"xup = {xup}")
+    print(f"xdown = {xdown}")
+
+    if not xup or not xdown:
+        print("[⚠️] Nie udało się odczytać współrzędnych xup/xdown")
+        return
+
+    px = (xup - xdown) / 828
+    px_sl = (entry_price - sl_price) / px
+    px_tp = (tp_price - entry_price) / px
+
+    print(f"px sl {px_sl} px tp {px_tp} px {px}")
+
+    if chuj == "buy":
+        time.sleep(1)
+        px_tp *= -1
+        time.sleep(1)
+        pyautogui.moveTo(500, y_line, duration=0.2)
+        time.sleep(1)
+        pyautogui.dragRel(0, px_tp, duration=0.2, button='left')
+        time.sleep(1)
+        pyautogui.moveTo(600, y_line, duration=0.2)
+        time.sleep(1)
+        pyautogui.dragRel(0, px_sl, duration=0.2, button='left')
+        time.sleep(1)
+
+    if chuj == "sell":
+        time.sleep(1)
+        pyautogui.moveTo(500, y_line, duration=0.2)
+        time.sleep(1)
+        pyautogui.dragRel(0, px_tp, duration=0.2, button='left')
+        time.sleep(1)
+        pyautogui.moveTo(600, y_line, duration=0.2)
+        time.sleep(1)
+        px_sl *= -1
+        time.sleep(1)
+        pyautogui.dragRel(0, px_sl, duration=0.2, button='left')
+        time.sleep(1)
+
+    print("[✅] Zakończono test funkcji — zwracam TP i SL")
+    return tp_price, sl_price
+
+
+# 🧪 Przykładowe wywołanie testowe --------------------------------------
+
+if __name__ == "__main__":
+    tp, sl = place_futures_order_with_tp_sl_tv(
+        symbol="BTCUSDT",
+        side="buy",
+        quantity=0.01,
+        entry_price=50000,
+        sl_price=49500,
+        waiting_20=None,
+        waiting_50=None,
+        waiting_20_down=None,
+        waiting_50_down=None,
+        df=None,
+        precision=2,
+        tp_multiplier=1.5,
+        opposite=False,
+        tick_size=0.01,
+    )
+
+    print(f"[WYNIK TESTU] TP={tp} | SL={sl}")

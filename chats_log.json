@@ -1,0 +1,32 @@
+[
+    {
+        "id": 1,
+        "topic": "Ile to jest 5 + 2",
+        "created_at": "2025-08-12T19:00:11.474093",
+        "messages": []
+    },
+    {
+        "id": 2,
+        "topic": "ogólnie to to jak dostałeś wiadomość to działa",
+        "created_at": "2025-08-13T17:55:04.541928",
+        "messages": []
+    },
+    {
+        "id": 3,
+        "topic": "ogólnie to działa to źle kliknąłem i to jest",
+        "created_at": "2025-08-13T17:57:16.508709",
+        "messages": []
+    },
+    {
+        "id": 4,
+        "topic": "ile to 5 + 3",
+        "created_at": "2025-08-15T13:25:25.203775",
+        "messages": []
+    },
+    {
+        "id": 5,
+        "topic": "Ile lat może żyć zebra",
+        "created_at": "2025-08-15T14:09:37.055154",
+        "messages": []
+    }
+]
